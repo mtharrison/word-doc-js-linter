@@ -1,0 +1,19 @@
+{
+  "name": "word-code-linter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "esprima": "^2.7.2",
+    "html-entities": "^1.2.0",
+    "html-to-text": "^2.0.0",
+    "jsdom": "^8.0.4",
+    "mammoth": "^0.3.32",
+    "textract": "^1.2.1"
+  }
+}
