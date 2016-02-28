@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Output for document {{document}}</title>
+        <style>
+            div.listing {
+                background: red
+            }
+            div.valid {
+                background: white;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Report for {{document}}</h1>
+        {{#each listings}}
+        <div class="listing {{#if this.valid}}valid{{/if}}">
+            <pre>{{this.listing}}</pre>
+            {{#if this.lintMessages}}
+            <table class="messages">
+                <tr>
+                    <th>line</th>
+                    <th>col</th>
+                    <th>rule</th>
+                    <th>message</th>
+                </tr>
+                {{#each this.lintMessages}}
+                <tr>
+                    <td>{{this.line}}</td>
+                    <td>{{this.column}}</td>
+                    <td>{{this.ruleId}}</td>
+                    <td>{{this.message}}</td>
+                </tr>
+                {{/each}}
+            </table>
+            {{else}}
+            <h2>No lint messages</h2>
+            {{/if}}
+        </div>
+        <hr>
+        {{/each}}
+    </body>
+</html>

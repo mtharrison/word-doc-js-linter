@@ -1,75 +1,62 @@
-'use strict';
-
-const Entities = require('html-entities').AllHtmlEntities;
-const Esprima = require('esprima');
 const Fs = require('fs');
-const Jsdom = require("jsdom");
-const Mammoth = require('mammoth');
+const Handlebars = require('Handlebars');
+const Items = require('items');
 const Path = require('path');
+const Process = require('./process');
 
-const entities = new Entities();
-
-const path = Path.join(__dirname, 'sample.docx');
-
-var options = {
-    styleMap: [
-        "p[style-name='.CodeA'] => div.code > p:fresh",
-        "p[style-name='.CodeB'] => div.code > p:fresh"
+const options = {
+    replacements: [
+        { pattern: '...', replace: '' },
+        { pattern: '<strong>', replace: '' },
+        { pattern: '</strong>', replace: '' },
+        { pattern: /\/\/.*/g, replace: ''}
     ],
-    ignoreEmptyParagraphs: false
+    mammoth: {
+        styleMap: [
+            "p[style-name='.CodeA'] => div.code > p:fresh",
+            "p[style-name='.CodeB'] => div.code > p:fresh"
+        ],
+        ignoreEmptyParagraphs: false
+    },
+    omitRules: ['eol-last', 'no-trailing-spaces', 'strict']
 };
 
-const replacements = [
-    { pattern: '...', replace: '' },
-    { pattern: '<strong>', replace: '' },
-    { pattern: '</strong>', replace: '' },
-    { pattern: /\/\/.*/g, replace: ''}
+const documents = [
+    'Harrison_HapiJS_ch01',
+    'Harrison_HapiJS_ch02',
+    'Harrison_HapiJS_ch03',
+    'Harrison_HapiJS_ch04',
+    'Harrison_HapiJS_ch05',
+    'Harrison_HapiJS_ch06',
+    'Harrison_HapiJS_ch07',
+    'Harrison_HapiJS_ch08',
+    'Harrison_HapiJS_ch09',
+    'Harrison_HapiJS_ch11'
 ];
 
-const codeListings = [];
+const hbs = Fs.readFileSync(Path.join(__dirname, 'template.hbs'));
+const template = Handlebars.compile(hbs.toString());
 
-const finished = function () {
+const process = function (item, next) {
 
-    codeListings.forEach((l, i) => {
+    Process.process(Path.join(__dirname, 'input', item + '.docx'), options, (err, res) => {
 
-        // 1. Try to parse it as valid JS
-
-        try {
-            Esprima.parse(l);
-            console.log('Listing %s was valid JS', i + 1);
-        } catch (e) {
-            console.log('Listing %s was\'t valid JS', i + 1);
+        if (err) {
+            return next(err);
         }
+
+        Fs.writeFileSync(Path.join(__dirname, 'output', item + '.html'), template({
+            document: item,
+            listings: res
+        }));
+        console.log('Finished writing %s', item);
+        return next(null);
     });
 };
 
-Mammoth.convertToHtml({ path }, options)
-    .then((result) => {
+Items.parallel(documents, process, (err) => {
 
-        const html = result.value;
-        Jsdom.env(html, (err, window) => {
-
-            if (err) {
-                throw err;
-            }
-            const listings = window.document.querySelectorAll('.code');
-
-            for (var i = 0; i < listings.length; i++) {
-
-                const block = listings[i];
-                const lines = [];
-                for (var j = 0; j < block.children.length; j++) {
-                    let line = entities.decode(block.children[j].innerHTML);
-                    replacements.forEach((r) => {
-                        line = line.replace(r.pattern, r.replace);
-                    });
-                    lines.push(line);
-                }
-
-                codeListings.push(lines.join('\n'));
-            }
-
-            finished();
-        });
-    })
-    .done();
+    if (err) {
+        throw err;
+    }
+});
